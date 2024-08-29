@@ -8,6 +8,7 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [displayedImages, setDisplayedImages] = useState([]);
+  const [numDisplay, setNumDisplay] = useState(20); // 表示する枚数を管理する状態
   const intervalRef = useRef(null);
 
   // 画面の幅と高さを管理するref
@@ -18,8 +19,6 @@ export default function Home() {
     // 初期サイズの取得
     widthRef.current = document.documentElement.clientWidth;
     heightRef.current = document.documentElement.clientHeight;
-    // widthRef.current = 1920;
-    // heightRef.current = 1080;
   }, []);
 
   const handleFolderSelect = async (event) => {
@@ -87,7 +86,6 @@ export default function Home() {
     });
   };
 
-  // 上記関数を useEffect で使用する場所
   useEffect(() => {
     const processImages = async () => {
       if (images.length > 0) {
@@ -105,7 +103,7 @@ export default function Home() {
 
   useEffect(() => {
     if (images.length > 0) {
-      const initialDisplay = images.slice(0, 20);
+      const initialDisplay = images.slice(0, numDisplay);
       setDisplayedImages(initialDisplay);
 
       let currentIndex = 0;
@@ -129,12 +127,12 @@ export default function Home() {
           return newPositions;
         });
 
-        currentIndex = (currentIndex + 1) % 20;
+        currentIndex = (currentIndex + 1) % numDisplay;
       }, 2000);
 
       return () => clearInterval(intervalRef.current);
     }
-  }, [images]);
+  }, [images, numDisplay]);
 
   useEffect(() => {
     const animate = () => {
@@ -189,6 +187,18 @@ export default function Home() {
           {progress}%
         </progress>
       )}
+      <div>
+        <label>
+          表示数:
+          <input
+            type="number"
+            value={numDisplay}
+            onChange={(e) => setNumDisplay(parseInt(e.target.value, 10))}
+            min="1"
+            max={images.length}
+          />
+        </label>
+      </div>
       <div
         style={{
           position: "relative",
