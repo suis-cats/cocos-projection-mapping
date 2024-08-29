@@ -17,10 +17,10 @@ export default function Home() {
 
   useEffect(() => {
     // 初期サイズの取得
-    // widthRef.current = document.documentElement.clientWidth;
-    // heightRef.current = document.documentElement.clientHeight;
-    widthRef.current = 1920;
-    heightRef.current = 1080;
+    widthRef.current = document.documentElement.clientWidth;
+    heightRef.current = document.documentElement.clientHeight;
+    // widthRef.current = 1920;
+    // heightRef.current = 1080;
   }, []);
 
   const handleFolderSelect = async (event) => {
@@ -101,6 +101,22 @@ export default function Home() {
       };
     });
   };
+
+  // 上記関数を useEffect で使用する場所
+  useEffect(() => {
+    const processImages = async () => {
+      if (images.length > 0) {
+        const processedImages = await Promise.all(
+          images.map((url) =>
+            makeImageTransparent(url).then((processedUrl) => processedUrl)
+          )
+        );
+        setImages(processedImages);
+      }
+    };
+
+    processImages();
+  }, [images]);
 
   useEffect(() => {
     if (images.length > 0) {
