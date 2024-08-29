@@ -1,7 +1,6 @@
 "use client"; // クライアントコンポーネントとして指定
 
 import { useState, useEffect, useRef } from "react";
-import heic2any from "heic2any";
 
 export default function Home() {
   const [images, setImages] = useState([]);
@@ -34,22 +33,8 @@ export default function Home() {
 
     const imageUrls = await Promise.all(
       imageFiles.map(async (file, index) => {
-        if (file.type === "image/heic") {
-          try {
-            const convertedBlob = await heic2any({
-              blob: file,
-              toType: "image/png",
-            });
-            setProgress(((index + 1) / imageFiles.length) * 50);
-            return URL.createObjectURL(convertedBlob);
-          } catch (error) {
-            console.error("HEIC変換エラー:", error);
-            return null;
-          }
-        } else {
-          setProgress(((index + 1) / imageFiles.length) * 50);
-          return URL.createObjectURL(file);
-        }
+        setProgress(((index + 1) / imageFiles.length) * 50);
+        return URL.createObjectURL(file);
       })
     );
 
