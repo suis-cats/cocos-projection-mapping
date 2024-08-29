@@ -10,6 +10,7 @@ export default function Home() {
   const [displayedImages, setDisplayedImages] = useState([]);
   const [numDisplay, setNumDisplay] = useState(20); // 表示する枚数を管理する状態
   const intervalRef = useRef(null);
+  const currentIndexRef = useRef(0); // 現在のインデックスをuseRefで管理
 
   // 画面の幅と高さを管理するref
   const widthRef = useRef(0);
@@ -87,39 +88,23 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const processImages = async () => {
-      if (images.length > 0) {
-        const processedImages = await Promise.all(
-          images.map((url) =>
-            makeImageTransparent(url).then((processedUrl) => processedUrl)
-          )
-        );
-        setImages(processedImages);
-      }
-    };
-
-    processImages();
-  }, [images]);
-
-  useEffect(() => {
     if (images.length > 0) {
       const initialDisplay = images.slice(0, numDisplay);
       setDisplayedImages(initialDisplay);
 
-      let currentIndex = 0;
       intervalRef.current = setInterval(() => {
         const randomIndex = Math.floor(Math.random() * images.length);
         const newImage = images[randomIndex];
 
         setDisplayedImages((prevImages) => {
           const updatedImages = [...prevImages];
-          updatedImages[currentIndex] = newImage;
+          updatedImages[currentIndexRef.current] = newImage;
           return updatedImages;
         });
 
         setPositions((prevPositions) => {
           const newPositions = [...prevPositions];
-          newPositions[currentIndex] = {
+          newPositions[currentIndexRef.current] = {
             x: Math.random() * widthRef.current,
             y: Math.random() * heightRef.current,
             speed: 0.5 + Math.random() * 1,
@@ -127,7 +112,7 @@ export default function Home() {
           return newPositions;
         });
 
-        currentIndex = (currentIndex + 1) % numDisplay;
+        currentIndexRef.current = (currentIndexRef.current + 1) % numDisplay;
       }, 2000);
 
       return () => clearInterval(intervalRef.current);
@@ -169,7 +154,6 @@ export default function Home() {
 
   return (
     <div>
-      <h1>お絵かき水族館風のアニメーション（一匹ずつ入れ替え）</h1>
       <input
         type="file"
         webkitdirectory="true"
