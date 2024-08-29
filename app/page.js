@@ -1,4 +1,4 @@
-"use client";
+"use client"; // クライアントコンポーネントとして指定
 
 import { useState, useEffect, useRef } from "react";
 import heic2any from "heic2any";
@@ -52,8 +52,8 @@ export default function Home() {
     );
 
     const initialPositions = processedImages.map(() => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
+      x: typeof window !== "undefined" ? Math.random() * window.innerWidth : 0,
+      y: typeof window !== "undefined" ? Math.random() * window.innerHeight : 0,
       speed: 0.5 + Math.random() * 1,
     }));
 
@@ -95,31 +95,35 @@ export default function Home() {
       const initialDisplay = images.slice(0, 20);
       setDisplayedImages(initialDisplay);
 
-      let currentIndex = 0; // 入れ替える画像のインデックス
+      let currentIndex = 0;
       intervalRef.current = setInterval(() => {
         const randomIndex = Math.floor(Math.random() * images.length);
         const newImage = images[randomIndex];
 
-        // 新しい画像を表示し、古い画像と入れ替える
         setDisplayedImages((prevImages) => {
           const updatedImages = [...prevImages];
           updatedImages[currentIndex] = newImage;
           return updatedImages;
         });
 
-        // ランダムな位置に新しい画像を配置
         setPositions((prevPositions) => {
           const newPositions = [...prevPositions];
           newPositions[currentIndex] = {
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
+            x:
+              typeof window !== "undefined"
+                ? Math.random() * window.innerWidth
+                : 0,
+            y:
+              typeof window !== "undefined"
+                ? Math.random() * window.innerHeight
+                : 0,
             speed: 0.5 + Math.random() * 1,
           };
           return newPositions;
         });
 
-        currentIndex = (currentIndex + 1) % 20; // 次の画像のインデックスに移動
-      }, 2000); // 2秒ごとに1匹ずつ入れ替え
+        currentIndex = (currentIndex + 1) % 20;
+      }, 2000);
 
       return () => clearInterval(intervalRef.current);
     }
@@ -134,11 +138,13 @@ export default function Home() {
 
           let adjustedX = newX;
           let adjustedY = newY;
-          if (newX < 0 || newX > window.innerWidth - 200) {
-            adjustedX = newX < 0 ? 0 : window.innerWidth - 200;
-          }
-          if (newY < 0 || newY > window.innerHeight - 200) {
-            adjustedY = newY < 0 ? 0 : window.innerHeight - 200;
+          if (typeof window !== "undefined") {
+            if (newX < 0 || newX > window.innerWidth - 200) {
+              adjustedX = newX < 0 ? 0 : window.innerWidth - 200;
+            }
+            if (newY < 0 || newY > window.innerHeight - 200) {
+              adjustedY = newY < 0 ? 0 : window.innerHeight - 200;
+            }
           }
 
           return {
@@ -152,7 +158,7 @@ export default function Home() {
       requestAnimationFrame(animate);
     };
 
-    animate(); // 常にアニメーションを続ける
+    animate();
 
     return () => cancelAnimationFrame(animate);
   }, [displayedImages]);
@@ -198,7 +204,7 @@ export default function Home() {
               left: `${positions[index]?.x}px`,
               top: `${positions[index]?.y}px`,
               transition:
-                "left 2s linear, top 2s linear, opacity 1s ease-in-out", // 常に泳ぐアニメーションとフェード
+                "left 2s linear, top 2s linear, opacity 1s ease-in-out",
               opacity: 1,
             }}
           />
