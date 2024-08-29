@@ -1,113 +1,209 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import heic2any from "heic2any";
 
 export default function Home() {
+  const [images, setImages] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [progress, setProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [displayedImages, setDisplayedImages] = useState([]);
+  const intervalRef = useRef(null);
+
+  const handleFolderSelect = async (event) => {
+    setLoading(true);
+    const files = Array.from(event.target.files);
+    const imageFiles = files.filter(
+      (file) => file.type.startsWith("image/") || file.type === "image/heic"
+    );
+
+    setProgress(0);
+
+    const imageUrls = await Promise.all(
+      imageFiles.map(async (file, index) => {
+        if (file.type === "image/heic") {
+          try {
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: "image/png",
+            });
+            setProgress(((index + 1) / imageFiles.length) * 50);
+            return URL.createObjectURL(convertedBlob);
+          } catch (error) {
+            console.error("HEIC変換エラー:", error);
+            return null;
+          }
+        } else {
+          setProgress(((index + 1) / imageFiles.length) * 50);
+          return URL.createObjectURL(file);
+        }
+      })
+    );
+
+    const validImageUrls = imageUrls.filter((url) => url !== null);
+    const processedImages = await Promise.all(
+      validImageUrls.map((url, index) =>
+        makeImageTransparent(url).then((processedUrl) => {
+          setProgress(50 + ((index + 1) / validImageUrls.length) * 50);
+          return processedUrl;
+        })
+      )
+    );
+
+    const initialPositions = processedImages.map(() => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      speed: 0.5 + Math.random() * 1,
+    }));
+
+    setImages(processedImages);
+    setPositions(initialPositions);
+    setLoading(false);
+  };
+
+  const makeImageTransparent = (url) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = url;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        ctx.drawImage(img, 0, 0);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) {
+            data[i + 3] = 0;
+          }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL());
+      };
+    });
+  };
+
+  useEffect(() => {
+    if (images.length > 0) {
+      const initialDisplay = images.slice(0, 20);
+      setDisplayedImages(initialDisplay);
+
+      let currentIndex = 0; // 入れ替える画像のインデックス
+      intervalRef.current = setInterval(() => {
+        const randomIndex = Math.floor(Math.random() * images.length);
+        const newImage = images[randomIndex];
+
+        // 新しい画像を表示し、古い画像と入れ替える
+        setDisplayedImages((prevImages) => {
+          const updatedImages = [...prevImages];
+          updatedImages[currentIndex] = newImage;
+          return updatedImages;
+        });
+
+        // ランダムな位置に新しい画像を配置
+        setPositions((prevPositions) => {
+          const newPositions = [...prevPositions];
+          newPositions[currentIndex] = {
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            speed: 0.5 + Math.random() * 1,
+          };
+          return newPositions;
+        });
+
+        currentIndex = (currentIndex + 1) % 20; // 次の画像のインデックスに移動
+      }, 2000); // 2秒ごとに1匹ずつ入れ替え
+
+      return () => clearInterval(intervalRef.current);
+    }
+  }, [images]);
+
+  useEffect(() => {
+    const animate = () => {
+      setPositions((prevPositions) =>
+        prevPositions.map((pos) => {
+          const newX = pos.x + (Math.random() - 0.5) * pos.speed * 5;
+          const newY = pos.y + (Math.random() - 0.5) * pos.speed * 5;
+
+          let adjustedX = newX;
+          let adjustedY = newY;
+          if (newX < 0 || newX > window.innerWidth - 200) {
+            adjustedX = newX < 0 ? 0 : window.innerWidth - 200;
+          }
+          if (newY < 0 || newY > window.innerHeight - 200) {
+            adjustedY = newY < 0 ? 0 : window.innerHeight - 200;
+          }
+
+          return {
+            x: adjustedX,
+            y: adjustedY,
+            speed: pos.speed,
+          };
+        })
+      );
+
+      requestAnimationFrame(animate);
+    };
+
+    animate(); // 常にアニメーションを続ける
+
+    return () => cancelAnimationFrame(animate);
+  }, [displayedImages]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+    <div>
+      <h1>お絵かき水族館風のアニメーション（一匹ずつ入れ替え）</h1>
+      <input
+        type="file"
+        webkitdirectory="true"
+        mozdirectory="true"
+        directory="true"
+        multiple
+        onChange={handleFolderSelect}
+      />
+      {loading && (
+        <progress
+          value={progress}
+          max="100"
+          style={{ width: "100%", height: "30px", marginTop: "10px" }}
+        >
+          {progress}%
+        </progress>
+      )}
+      <div
+        style={{
+          position: "relative",
+          width: "100vw",
+          height: "100vh",
+          overflow: "hidden",
+        }}
+      >
+        {displayedImages.map((src, index) => (
+          <img
+            key={index}
+            src={src}
+            alt={`image-${index}`}
+            style={{
+              position: "absolute",
+              width: "200px",
+              height: "200px",
+              objectFit: "cover",
+              left: `${positions[index]?.x}px`,
+              top: `${positions[index]?.y}px`,
+              transition:
+                "left 2s linear, top 2s linear, opacity 1s ease-in-out", // 常に泳ぐアニメーションとフェード
+              opacity: 1,
+            }}
+          />
+        ))}
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   );
 }
