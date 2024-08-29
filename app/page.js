@@ -17,8 +17,10 @@ export default function Home() {
 
   useEffect(() => {
     // 初期サイズの取得
-    widthRef.current = document.documentElement.clientWidth;
-    heightRef.current = document.documentElement.clientHeight;
+    // widthRef.current = document.documentElement.clientWidth;
+    // heightRef.current = document.documentElement.clientHeight;
+    widthRef.current = 1920;
+    heightRef.current = 1080;
   }, []);
 
   const handleFolderSelect = async (event) => {
