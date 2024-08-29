@@ -16,20 +16,9 @@ export default function Home() {
   const heightRef = useRef(0);
 
   useEffect(() => {
-    const updateWindowSize = () => {
-      widthRef.current = document.documentElement.clientWidth;
-      heightRef.current = document.documentElement.clientHeight;
-    };
-
     // 初期サイズの取得
-    updateWindowSize();
-
-    // リサイズ時にサイズを更新
-    window.addEventListener("resize", updateWindowSize);
-
-    return () => {
-      window.removeEventListener("resize", updateWindowSize);
-    };
+    widthRef.current = document.documentElement.clientWidth;
+    heightRef.current = document.documentElement.clientHeight;
   }, []);
 
   const handleFolderSelect = async (event) => {
@@ -212,8 +201,8 @@ export default function Home() {
             alt={`image-${index}`}
             style={{
               position: "absolute",
-              width: "300px",
-              height: "300px",
+              width: "200px",
+              height: "200px",
               objectFit: "cover",
               left: `${positions[index]?.x}px`,
               top: `${positions[index]?.y}px`,
