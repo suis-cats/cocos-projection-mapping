@@ -120,6 +120,8 @@ export default function Home() {
   }, [images, numDisplay]);
 
   useEffect(() => {
+    let animationFrameId;
+
     const animate = () => {
       setPositions((prevPositions) =>
         prevPositions.map((pos) => {
@@ -144,12 +146,12 @@ export default function Home() {
         })
       );
 
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     animate();
 
-    return () => cancelAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrameId);
   }, [displayedImages]);
 
   return (
@@ -172,16 +174,16 @@ export default function Home() {
         </progress>
       )}
       <div>
-        <label>
+        {/* <label>
           表示数:
           <input
             type="number"
             value={numDisplay}
             onChange={(e) => setNumDisplay(parseInt(e.target.value, 10))}
             min="1"
-            max={images.length}
+            max="100"
           />
-        </label>
+        </label> */}
       </div>
       <div
         style={{
@@ -206,6 +208,7 @@ export default function Home() {
               transition:
                 "left 2s linear, top 2s linear, opacity 1s ease-in-out",
               opacity: 1,
+              pointerEvents: "none",
             }}
           />
         ))}

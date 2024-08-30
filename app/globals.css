@@ -8,4 +8,5 @@ body {
   background-position: center; /* 背景画像を中央に配置する */
   margin: 0; /* ブラウザのデフォルトのマージンを削除 */
   padding: 0;
+  pointer-events: "none";
 }
